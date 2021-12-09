@@ -1,0 +1,66 @@
+[
+    {
+        "sourceDb": "sample_airbnb",
+        "sourceCollection": "listingsAndReviews",
+
+        "destDb": "Airbnb",
+        "destCollection": "user",
+        
+        "stages" : [
+            {
+                "$facet" : { 
+                    "reviewers" : [
+                        { "$unwind" : "$reviews" },                   
+                        { "$project" : 
+                            {   
+                                "_id" : "$reviews.reviewer_id", 
+                                "name" : "$reviews.reviewer_name",
+                                "imgUrl" : { "$concat" : ["https://robohash.org/", "$reviews.reviewer_id", "?set=set2" ]},
+                                "username" : { "$arrayElemAt" : [ { "$split" : ["$reviews.reviewer_name", " "] }, 0 ]},
+                                "password" : { "$arrayElemAt" : [ { "$split" : ["$reviews.reviewer_name", " "] }, 0 ]}
+                            }
+                        }
+                    ],
+                    "hosts" : [
+                        { "$project" : 
+                            { 
+                                "_id" : "$host.host_id", 
+                                "name" : "$host.host_name",
+                                "imgUrl" : "$host.host_thumbnail_url",
+                                "username" : { "$arrayElemAt" : [ { "$split" : ["$host.host_name", " "] }, 0 ]},
+                                "password" : { "$arrayElemAt" : [ { "$split" : ["$host.host_name", " "] }, 0 ]}
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "$project" : {
+                    "users" : { "$concatArrays" : [ "$reviewers", "$hosts" ]}
+                }
+            },
+            {
+                "$unwind" : "$users"                  
+            },
+            {
+                "$group" : {
+                    "_id" : "$users._id",
+                    "name" : { "$first" : "$users.name" },
+                    "imgUrl" : { "$first" : "$users.imgUrl" },
+                    "username" : { "$first" : "$users.username" },
+                    "password" : { "$first" : "$users.password" }
+                }
+            }
+        ],
+        "csvDef": {
+            "path" : "./users.csv",
+            "projection" : {
+                "_id" : 1,
+                "name" : 1,
+                "imgUrl" : 1,
+                "username" : 1,
+                "password" : 1
+            }
+        }
+    }
+]

@@ -1,0 +1,95 @@
+[
+    {
+        "sourceDb": "sample_airbnb",
+        "sourceCollection": "listingsAndReviews",
+
+        "destDb": "Airbnb",
+        "destCollection": "stay",
+
+        "stages" : [
+            {
+                "$match" : { "name" : { "$gt" : "R"}}
+            },
+            {
+                "$project" : {
+                    "name": 1,
+                    "summary": 1,
+                    "interaction": 1,
+                    "houseRules": "$house_rules",
+                    "propertyType": "$property_type",
+                    "roomType": "$room_type",
+                    "bedType": "$bed_type",
+                    "minimumNights": "$minimum_nights",
+                    "maximumNights": "$maximum_nights",
+                    "cancellationPolicy": "$cancellation_policy",
+                    "capacity": "$accommodates",
+                    "bedrooms": 1,
+                    "beds": 1,
+                    "numOfReviews": "$number_of_reviews",
+                    "bathrooms": 1,
+                    "amenities": 1,
+                    "price": 1,
+                    "securityDeposit": "$security_deposit",
+                    "cleaningFee": "$cleaning_fee",
+                    "extraPeople": "$extra_people",
+                    "guestsIncluded": "$guests_included",
+                    "imgUrls": ["$images.picture_url"],
+                    "host": {
+                        "_id": "$host.host_id",
+                        "name": "$host.host_name",
+                        "location": "$host.host_location",
+                        "about": "$host.host_about",
+                        "responseTime": "$host.host_response_time",
+                        "thumbnailUrl": "$host.host_thumbnail_url",
+                        "pictureUrl": "$host.host_picture_url",
+                        "isSuperhost": "$host.host_is_superhost"
+                    },
+                    "address" : {
+                        "country": 1,
+                        "countryCode": "$country_code",   
+                        "street": 1,
+                        "location": {
+                            "lat": { "$arrayElemAt": [ "$address.location.coordinates", 0 ] },
+                            "lan": { "$arrayElemAt": [ "$address.location.coordinates", 1 ] }
+                        }
+                    },
+                    "reviewScores": {
+                        "accuracy": "$review_scores.review_scores_accuracy",
+                        "cleanliness": "$review_scores.review_scores_cleanliness",
+                        "checkin": "$review_scores.review_scores_checkin",
+                        "communication": "$review_scores.review_scores_communication",
+                        "location": "$review_scores.review_scores_location",
+                        "value": "$review_scores.review_scores_value",
+                        "rating": "$review_scores.review_scores_rating"
+                    },
+                    "reviews": {
+                        "$map": { 
+                            "input": "$reviews", 
+                            "as": "review", 
+                            "in": { 
+                                "date": "$$review.date",
+                                "reviewerId": "$$review.reviewer_id",
+                                "reviewerName": "$$review.reviewer_name",
+                                "txt": "$$review.comments"
+                            }
+                        } 
+                    }
+                }
+            }
+        ],
+        "csvDef": {
+            "path" : "./stay.csv",
+            "projection" : {
+                "_id" : 1,
+                "name" : 1,
+                "propertyType" : 1,
+                "capacity" : 1,
+                "numOfReviews" : 1,
+                "price" : 1,
+                "host.name" : 1,
+                "country" : 1,
+                "street"  : 1         
+            } 
+        }
+    }
+]
