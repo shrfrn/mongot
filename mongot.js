@@ -4,10 +4,10 @@ const commandLineArgs = require('command-line-args')
 const terminal = require( 'terminal-kit' ).terminal
 
 const dbService = require('./db.service')
+const cmdLineService = require('./command-line.service')
 const logger = require('./logger.service')
 /*
 // Todos:
-// Add help screen
 // log
 */
 var gCmdOptions = {}
@@ -15,30 +15,14 @@ var gDefs = []
 var gProgressBar
 var gSpinner
 
-function getCmdOptions(){
-
-    const optionDefinitions = [
-        { name: 'def-file', alias: 'f', type: String, multiple: true, defaultOption: true, defaultValue: 'transform.json' },
-        { name: 'csv-path', alias: 'c', type: String },
-        { name: 'no-csv', alias: 'C', type: Boolean },
-        { name: 'no-csv-headings', alias: 'H', type: Boolean },
-        { name: 'no-write', alias: 'N', type: Boolean },
-        { name: 'connection-str', alias: 's', type: String },
-        { name: 'source-connection-str', alias: 'i', type: String },
-        { name: 'source-collecion', alias: 'T', type: String },
-        { name: 'source-db', alias: 'D', type: String },
-        { name: 'dest-connection-str', alias: 'o', type: String },
-        { name: 'dest-collecion', alias: 't', type: String },
-        { name: 'dest-db', alias: 'd', type: String },
-        { name: 'log', alias: 'l', type: Boolean },
-        { name: 'help', alias: 'h', type: Boolean },
-        { name: 'show-version', alias: 'v', type: Boolean },
-    ]  
-    return commandLineArgs(optionDefinitions, { camelCase: true })
-}
 function setup(){
 
-    gCmdOptions = getCmdOptions()
+    gCmdOptions = cmdLineService.getCmdOptions()
+
+    if(gCmdOptions.help) {
+        cmdLineService.showHelp()
+        return
+    }
 
     gCmdOptions.defFile.forEach(defFile => {
         if(defFile.indexOf('.') === -1) defFile.concat('.json')
@@ -138,6 +122,8 @@ async function writeCSV(docs, def){
 (async () => {
 
     setup()
+    if(gCmdOptions.help) process.exit(0)
+
     terminal('\n\n\n')
     
     try {
