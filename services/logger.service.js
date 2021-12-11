@@ -1,11 +1,18 @@
 const fs = require('fs')
 
+var gLogFile = ''
+
+const echoOn = false
 const logsDir = './logs'
+
 if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir)
 }
 
-//define the time format
+function setLogFile(fileName){
+    gLogFile = fileName
+}
+
 function getTime() {
     let now = new Date()
     return now.toLocaleString()
@@ -23,11 +30,12 @@ function doLog(level, ...args) {
 
     var line = strs.join(' | ')
     line = `${getTime()} - ${level} - ${line}\n`
-    console.log(line)
-    fs.appendFileSync('./logs/backend.log', line)
+    if(echoOn) console.log(line)
+    fs.appendFileSync(gLogFile ? `${logsDir}/${gLogFile}` : './logs/backend.log', line)
 }
 
 module.exports = {
+    setLogFile,
     debug(...args) {
         // if (process.env.NODE_NEV === 'production') return
         doLog('DEBUG', ...args)
@@ -40,5 +48,5 @@ module.exports = {
     },
     error(...args) {
         doLog('ERROR', ...args)
-    }
+    },
 }

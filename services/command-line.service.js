@@ -20,7 +20,7 @@ function getCmdOptions(){
         { name: 'dest-connection-str', alias: 'o', type: String },
         { name: 'dest-collecion', alias: 't', type: String },
         { name: 'dest-db', alias: 'd', type: String },
-        { name: 'log', alias: 'l', type: Boolean },
+        { name: 'log', alias: 'l', type: String, defaultValue: 'mongot.log' },
         { name: 'help', alias: 'h', type: Boolean },
     ]  
     return commandLineArgs(optionDefinitions, { camelCase: true })
@@ -142,7 +142,7 @@ function showHelp(){
     
     const sections = [
       {
-        header: 'Mongo Trasform (mongot)',
+        header: 'Mongo Trasform ver 0.9 (mongot)',
         content: 'Mongo Transform is a command line utility for performing transformations on MongoDB collections using the MongoDB aggregation framework.'
       },
       {

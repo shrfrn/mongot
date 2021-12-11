@@ -1,15 +1,11 @@
 const packetSize = 100
 
-const commandLineArgs = require('command-line-args')
 const terminal = require( 'terminal-kit' ).terminal
 
-const dbService = require('./db.service')
-const cmdLineService = require('./command-line.service')
-const logger = require('./logger.service')
-/*
-// Todos:
-// log
-*/
+const dbService = require('./services/db.service')
+const cmdLineService = require('./services/command-line.service')
+const logger = require('./services/logger.service')
+
 var gCmdOptions = {}
 var gDefs = []
 var gProgressBar
@@ -24,24 +20,29 @@ function setup(){
         return
     }
 
+    logger.setLogFile(gCmdOptions.log ? gCmdOptions.log : 'mongot.log')
+    logger.info(`Starting... \n ${JSON.stringify(gCmdOptions, null, '\t')}`)
+    
     gCmdOptions.defFile.forEach(defFile => {
         if(defFile.indexOf('.') === -1) defFile.concat('.json')
         require(defFile).forEach(def => gDefs.push(def))
     })
+    logger.info(`defFiles... \n ${JSON.stringify(gDefs, null, '\t')}`)
     
     gDefs.forEach(def => {
-
+        
         for (const key in gCmdOptions) {
             def[key] = gCmdOptions[key]
         }
         if(!def.sourceConnectionStr && def.connectionStr) def.sourceConnectionStr = def.connectionStr
         if(!def.sourceConnectionStr) throw 'Source connection string missing.'
-
+        
         if(!def.noWrite){
             if(!def.destConnectionStr && def.connectionStr) def.destConnectionStr = def.connectionStr
             if(!def.destConnectionStr) throw 'Destinaion connection string missing.'
         }
         if(def.csvPath && def.csvDef) def.csvDef.path = def.csvPath
+        logger.info(`${JSON.stringify(def), null, '\t'}\n`)
     })
 }
 function initProgressBar(title){
@@ -73,11 +74,13 @@ async function writeDocs(docs, def) {
 
         for(let i = 0; i <= docs.length; i += packetSize){
             const packet = docs.slice(i, i + packetSize)
+            logger.info(`About to insert packet ${i / packetSize + 1} (packet size ${packetSize} documents)\n`)
             await collection.insertMany(packet)
             gProgressBar.update((i + packetSize) / docs.length)
         }
         gProgressBar.stop()
     } catch (err) {
+        logger.error(`Failed to insert packet`)
         console.log('cannot insert listing', err)
         throw err
     }
@@ -107,12 +110,15 @@ async function writeCSV(docs, def){
         
         if(! (docCount++ % packetSize)){
             fs.appendFileSync(path, docsStr, 'utf8')
+            logger.info(`About to write packet # ${parseInt(docCount / packetSize) + 1} to ${path}`)
             gProgressBar.update(docCount / docs.length)
             docsStr = ''
         }
     })
     
+    logger.info(`Writing last packet to ${path}`)
     fs.appendFileSync(path, docsStr, 'utf8')
+
     gProgressBar.update(docCount / docs.length)
     gProgressBar.stop()
 }
@@ -132,8 +138,12 @@ async function writeCSV(docs, def){
             const def = gDefs[i]
     
             await showSpinner( '  Running aggregation stages...' ) 
+            logger.info(`Begining aggregation with ${def.stages.length} stages`)
+
             const collection = await dbService.getCollection(def.sourceCollection, def.sourceDb, def.sourceConnectionStr)
             const docs = await collection.aggregate(def.stages).toArray()
+            
+            logger.info(`Ended aggregation`)
             hideSpinner()
             
             if(!def.noWrite) await writeDocs(docs, def)
