@@ -1,0 +1,39 @@
+[
+    {
+        "connectionStr" : "mongodb+srv://sharon:1234@cluster0.tu61v.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+        "sourceDb": "Airbnb",
+        "sourceCollection": "stay1",
+
+        "destDb": "Airbnb",
+        "destCollection": "user1",
+
+        "msg" : "Creating users from reviewers",
+        
+        "stages" : [
+            { "$unwind" : "$reviews" },                   
+            { "$project" : 
+                {   
+                    "_id" : 0, 
+                    "id" : "$reviews.by._id", 
+                    "fullname" : "$reviews.by.fullname",
+                    "imgUrl" : "$reviews.by.imgUrl",
+                    "username" : "$reviews.by.id",
+                    "password" : { "$arrayElemAt" : [ { "$split" : ["$reviews.by.fullname", " "] }, 0 ]}
+                }
+            }
+        ],
+        "csvDef": {
+            "path" : "./csv/user2.csv",
+            "projection" : {
+                "_id" : 1,
+                "fullname" : 1,
+                "imgUrl" : 1,
+                "username" : 1,
+                "password" : 1
+            }
+        },
+        "jsonDef": {
+            "path" : "./json/user2.json"
+        }
+    }
+]

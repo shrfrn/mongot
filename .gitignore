@@ -2,3 +2,6 @@ node_modules
 logs
 package-lock.json
 connection.json
+csv
+json
+**/old/

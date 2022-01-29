@@ -1,0 +1,195 @@
+[
+    {
+        "connectionStr" : "mongodb+srv://sharon:1234@cluster0.tu61v.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+        "sourceDb": "sample_airbnb",
+        "sourceCollection": "listingsAndReviews",
+
+        "destDb": "Airbnb",
+        "destCollection": "stay1",
+
+        "stages" : [
+            {
+                "$match": { "$and": [ 
+                    { "$expr": { "$gt":[ { "$size" : "$amenities" }, 0 ] } },
+                    { "number_of_reviews": { "$gt": 0 } }, 
+                    { "summary": { "$ne": "" } },
+                    { "interaction": { "$ne": "" } },
+                    { "houseRules": { "$ne": "" } }
+                ]} 
+            },
+            { 
+                "$facet" : { 
+                    "porto" : [
+                        { "$match" : {"address.market" : "Porto"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "maui" : [
+                        { "$match" : {"address.market" : "Maui"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "istanbul" : [
+                        { "$match" : {"address.market" : "Istanbul"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "new-york" : [
+                        { "$match" : {"address.market" : "New York"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "barcelona" : [
+                        { "$match" : {"address.market" : "Barcelona"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "sydney" : [
+                        { "$match" : {"address.market" : "Sydney"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "montreal" : [
+                        { "$match" : {"address.market" : "Montreal"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "rio-de-janeiro" : [
+                        { "$match" : {"address.market" : "Rio De Janeiro"} },  
+                        { "$limit" : 40}            
+                    ],
+                    "hong-kong" : [
+                        { "$match" : {"address.market" : "Hong Kong"} },  
+                        { "$limit" : 40}            
+                    ]
+                }
+            },
+            {
+                "$project" : {
+                    "stays" : { 
+                        "$concatArrays" : [ 
+                            "$porto",
+                            "$maui",
+                            "$istanbul",
+                            "$new-york",
+                            "$barcelona",
+                            "$sydney",
+                            "$montreal",
+                            "$rio-de-janeiro",
+                            "$hong-kong"
+                        ]
+                    }
+                }
+            },
+            { "$unwind" : "$stays"  },
+            {
+                "$group" : {
+                    "_id": "$stays._id",
+                    "name" : { "$first" : "$stays.name" },
+                    "summary" : { "$first" : "$stays.summary" },
+                    "interaction" : { "$first" : "$stays.interaction" },
+                    "houseRules" : { "$first" : "$stays.house_rules" },
+                    "propertyType" : { "$first" : "$stays.property_type" },
+                    "roomType" : { "$first" : "$stays.room_type" },
+                    "bedType" : { "$first" : "$stays.bed_type" },
+                    "cancellationPolicy" : { "$first" : "$stays.cancellation_policy" },
+                    "capacity" : { "$first" : "$stays.accommodates" },
+                    "bedrooms" : { "$first" : "$stays.bedrooms" },
+                    "beds" : { "$first" : "$stays.beds" },
+                    "numOfReviews" : { "$first" : "$stays.number_of_reviews" },
+                    "bathrooms" : { "$first" : "$stays.bathrooms" },
+                    "amenities" : { "$first" : "$stays.amenities" },
+                    "price" : { "$first" : "$stays.price" },
+                    "securityDeposit" : { "$first" : "$stays.security_deposit" },
+                    "cleaningFee" : { "$first" : "$stays.cleaning_fee" },
+                    "extraPeople" : { "$first" : "$stays.extra_people" },
+                    "guestsIncluded" : { "$first" : "$stays.guests_included" },
+                    "host" : { "$first" : "$stays.host" },
+                    "address" : { "$first" : "$stays.address" },
+                    "reviews" : { "$first" : { "$slice": [ "$stays.reviews", 20 ] }},
+                    "review_scores" : { "$first" : "$stays.review_scores" }
+                }
+            },
+            {
+                "$project" : {
+                    "_id": 0,
+                    "id" : "$_id",
+                    "name": 1,
+                    "summary": 1,
+                    "interaction": 1,
+                    "houseRules": 1,
+                    "propertyType": 1,
+                    "roomType": 1,
+                    "bedType": 1,
+                    "minimumNights": 1,
+                    "maximumNights": 1,
+                    "cancellationPolicy": 1,
+                    "capacity": 1,
+                    "bedrooms": 1,
+                    "beds": 1,
+                    "numOfReviews": 1,
+                    "bathrooms": { "$toLong" : "$bathrooms" },
+                    "amenities": 1,
+                    "price": { "$toLong" : "$price" },
+                    "securityDeposit": { "$toLong" : "$securityDeposit" },
+                    "cleaningFee": { "$toLong" : "$cleaningFee" },
+                    "extraPeople": { "$toLong" : "$extraPeople" },
+                    "host": {
+                        "_id": "$host.host_id",
+                        "fullname": "$host.host_name",
+                        "location": "$host.host_location",
+                        "about": "$host.host_about",
+                        "responseTime": "$host.host_response_time",
+                        "thumbnailUrl": "$host.host_thumbnail_url",
+                        "pictureUrl": "$host.host_picture_url",
+                        "isSuperhost": "$host.host_is_superhost"
+                    },
+                    "address" : {
+                        "country": 1,
+                        "countryCode": "$address.country_code",   
+                        "city": "$address.market",   
+                        "street": 1,
+                        "location": {
+                            "lat": { "$arrayElemAt": [ "$address.location.coordinates", 0 ] },
+                            "lan": { "$arrayElemAt": [ "$address.location.coordinates", 1 ] }
+                        }
+                    },
+                    "reviewScores": {
+                        "accuracy": "$review_scores.review_scores_accuracy",
+                        "cleanliness": "$review_scores.review_scores_cleanliness",
+                        "checkin": "$review_scores.review_scores_checkin",
+                        "communication": "$review_scores.review_scores_communication",
+                        "location": "$review_scores.review_scores_location",
+                        "value": "$review_scores.review_scores_value",
+                        "rating": "$review_scores.review_scores_rating"
+                    },
+                    "reviews": {
+                        "$map": { 
+                            "input": "$reviews", 
+                            "as": "review", 
+                            "in": { 
+                                "at": "$$review.date",
+                                "by": {
+                                    "_id": "$$review.reviewer_id",
+                                    "fullname": "$$review.reviewer_name",
+                                    "imgUrl": { "$concat" : ["https://robohash.org/", "$$review.reviewer_id", "?set=set2" ]}
+                                },
+                                "txt": "$$review.comments"
+                            }
+                        } 
+                    }
+                }
+            }
+        ],
+        "csvDef": {
+            "path" : "./csv/stay1.csv",
+            "projection" : {
+                "_id" : 1,
+                "id" : 1,
+                "name" : 1,
+                "propertyType" : 1,
+                "capacity" : 1,
+                "price" : 1,
+                "host.fullname" : 1,
+                "address.country" : 1,
+                "address.city" : 1
+            } 
+        },
+        "jsonDef": {
+            "path" : "./json/stay1.json"
+        }
+    }
+]

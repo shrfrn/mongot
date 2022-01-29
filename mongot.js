@@ -34,6 +34,8 @@ function setup(){
         for (const key in gCmdOptions) {
             def[key] = gCmdOptions[key]
         }
+        if(!def.stages) throw 'Aggregation definition missing.'
+        
         if(!def.sourceConnectionStr && def.connectionStr) def.sourceConnectionStr = def.connectionStr
         if(!def.sourceConnectionStr) throw 'Source connection string missing.'
         
@@ -42,6 +44,8 @@ function setup(){
             if(!def.destConnectionStr) throw 'Destinaion connection string missing.'
         }
         if(def.csvPath && def.csvDef) def.csvDef.path = def.csvPath
+        if(def.jsonPath && def.jsonDef) def.jsonDef.path = def.jsonPath
+
         logger.info(`${JSON.stringify(def), null, '\t'}\n`)
     })
 }
@@ -57,7 +61,12 @@ async function showSpinner(msg){
     terminal('\n')
     terminal.column(10)
     gSpinner = await terminal.spinner()
-    terminal(msg ) 
+    terminal(msg) 
+}
+async function showMsg(msg){
+    terminal('\n\n')
+    terminal(msg) 
+    terminal('\n')
 }
 function hideSpinner(){
     gSpinner.animate(false)
@@ -65,7 +74,7 @@ function hideSpinner(){
 }
 async function writeDocs(docs, def) {
 
-    const title = def.msg ? def.msg : `Writing ${docs.length.toLocaleString()} documents to ${def.destDb}.${def.destCollection} ...  `
+    const title = `Writing ${docs.length.toLocaleString()} documents to ${def.destDb}.${def.destCollection} ...  `
     
     try {
         const collection = await dbService.getCollection(def.destCollection, def.destDb, def.destConnectionStr)
@@ -104,7 +113,14 @@ async function writeCSV(docs, def){
 
     if(!def.noCsvHeadings) docsStr = recordDef.join(seperator) + '\n'
     docs.forEach(doc => {
-        recordDef.forEach(key => docsStr += `${doc[key]}${seperator}`)
+        recordDef.forEach(key => {
+
+            nestedKeys = key.split('.')
+            let currField = doc
+            
+            nestedKeys.forEach(nestedKey => currField = currField[nestedKey])
+            docsStr += `${currField}${seperator}`
+        })
         docsStr = docsStr.slice(0, -1)
         docsStr += "\n"
         
@@ -122,7 +138,13 @@ async function writeCSV(docs, def){
     gProgressBar.update(docCount / docs.length)
     gProgressBar.stop()
 }
-
+function writeJSON(docs, def){
+    const path = def.jsonDef.path
+    const docsStr = JSON.stringify(docs, null, '\t')
+    
+    const fs = require('fs')
+    fs.writeFileSync(path, docsStr, 'utf8')
+}
 ////////////////////////////////////////////
 
 (async () => {
@@ -137,17 +159,17 @@ async function writeCSV(docs, def){
             
             const def = gDefs[i]
     
-            await showSpinner( '  Running aggregation stages...' ) 
+            await showMsg(`Running ${def.stages.length} aggregation stage(s)... ${def.msg ? def.msg : ''} `) 
             logger.info(`Begining aggregation with ${def.stages.length} stages`)
 
             const collection = await dbService.getCollection(def.sourceCollection, def.sourceDb, def.sourceConnectionStr)
             const docs = await collection.aggregate(def.stages).toArray()
             
             logger.info(`Ended aggregation`)
-            hideSpinner()
-            
+
             if(!def.noWrite) await writeDocs(docs, def)
             if(!def.noCsv && def.csvDef) writeCSV(docs, def)
+            if(!def.noJson && def.jsonDef) writeJSON(docs, def)
         }
     } catch (err) {
         console.log('error', err);

@@ -1,0 +1,37 @@
+[
+    {
+        "connectionStr" : "mongodb+srv://sharon:1234@cluster0.tu61v.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+        "sourceDb": "Airbnb",
+        "sourceCollection": "user2",
+
+        "destDb": "Airbnb",
+        "destCollection": "user",
+        
+        "stages" : [
+            {
+                "$project" : {
+                    "_id" : 0,
+                    "id" : "$_id",
+                    "fullname" : 1,
+                    "imgUrl" : 1,
+                    "username" : 1,
+                    "password" : 1
+                }
+            }
+        ],
+        "csvDef": {
+            "path" : "./csv/user.csv",
+            "projection" : {
+                "_id" : 1,
+                "id" : 1,
+                "fullname" : 1,
+                "imgUrl" : 1,
+                "username" : 1,
+                "password" : 1
+            }
+        },
+        "jsonDef": {
+            "path" : "./json/user.json"
+        }
+    }
+]

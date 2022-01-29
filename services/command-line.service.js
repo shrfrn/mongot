@@ -12,6 +12,8 @@ function getCmdOptions(){
         { name: 'csv-path', alias: 'c', type: String },
         { name: 'no-csv', alias: 'C', type: Boolean },
         { name: 'no-csv-headings', alias: 'H', type: Boolean },
+        { name: 'json-path', alias: 'j', type: String },
+        { name: 'no-json', alias: 'J', type: Boolean },
         { name: 'no-write', alias: 'N', type: Boolean },
         { name: 'connection-str', alias: 's', type: String },
         { name: 'source-connection-str', alias: 'i', type: String },
@@ -121,7 +123,7 @@ function showHelp(){
             description: 'CSV output full path',
             alias: 'c',
             type: String,
-            typeLabel: '{underline file}',
+            typeLabel: '{underline fullpath}',
             group: 'csv'
         },
         {
@@ -137,6 +139,21 @@ function showHelp(){
             alias: 'H',
             type: Boolean,
             group: 'csv'
+        },
+        {
+            name: 'json-path',
+            description: 'JSON output full path',
+            alias: 'j',
+            type: String,
+            typeLabel: '{underline fullpath}',
+            group: 'json'
+        },
+        {
+            name: 'no-json',
+            description: 'suppress JSON output',
+            alias: 'J',
+            type: Boolean,
+            group: 'json'
         },
     ]
     
@@ -173,6 +190,11 @@ function showHelp(){
         group: [ 'csv' ]
       },
       {
+        header: 'JSON',
+        optionList: optionDefinitions,
+        group: [ 'json' ]
+      },
+      {
         header: 'Examples',
         content: [
           {
@@ -184,16 +206,24 @@ function showHelp(){
             example: '$ node mongot {bold -o} {underline dbURL: mongodb://localhost:27017}',
           },
           {
-            desc: '2. Suppress database output',
+            desc: '3. Suppress database output',
             example: '$ node mongot {bold -N}',
           },
           {
-            desc: '2. Specify CSV output path',
+            desc: '4. Specify CSV output path',
             example: '$ node mongot {bold -c} {underline fullpath}',
           },
           {
-            desc: '2. Suppress CSV output',
+            desc: '5. Suppress CSV output',
             example: '$ node mongot {bold -C}',
+          },
+          {
+            desc: '6. Specify JSON output path',
+            example: '$ node mongot {bold -j} {underline fullpath}',
+          },
+          {
+            desc: '7. Suppress CSV & JSON output',
+            example: '$ node mongot {bold -CJ}',
           },
         ]
       },
